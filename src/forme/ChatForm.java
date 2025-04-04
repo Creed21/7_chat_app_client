@@ -10,6 +10,8 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import kontroler.ClientController;
 import model.Message;
 import model.Model;
@@ -33,6 +35,7 @@ public class ChatForm extends javax.swing.JFrame {
         setVisible(true);
         // load all users
         getAllUsers();
+        
     }
 
     /**
@@ -53,7 +56,7 @@ public class ChatForm extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jBtnSendMessage = new javax.swing.JToggleButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jTextConversation.setColumns(20);
         jTextConversation.setRows(5);
@@ -117,15 +120,21 @@ public class ChatForm extends javax.swing.JFrame {
         String newMessage = jTextNewMessage.getText().trim();
         
         Message message = new Message();
+        message.setFromUser(controller.getUser());
         message.setToUser(toUser);
-        message.setFromUser(toUser);
         message.setTimestamp(new Timestamp(System.currentTimeMillis()));
         message.setMessage(newMessage);
         
         Request request = new Request(Operation.SEND_MESSAGE, message);
         controller.sendRequest(request);
+        
+        Response response = controller.readReponse();
+        
+        if(response.isSuccess()) {
+            jTextConversation.append(formatMessage(message));
+        }
+        
     }//GEN-LAST:event_jBtnSendMessageActionPerformed
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JToggleButton jBtnSendMessage;
@@ -177,27 +186,28 @@ public class ChatForm extends javax.swing.JFrame {
         Request request = new Request(Operation.READ_CHAT_MESSAGES, user);
         controller.sendRequest(request);
         Response response = controller.readReponse();
-        
+
         jTextConversation.setText("");
-        
-        for(Model m: response.getResultList()) {
-            Message message = (Message) m;
-            
-            
-            
-            jTextConversation.append(String.format(
-                    "From: %s -> To: %s | %s\n\t%s",
+
+        System.out.println("request: " + request);
+
+        if(!response.getResultList().isEmpty()) {
+            for(Model m: response.getResultList()) {
+                Message message = (Message) m;
+
+                jTextConversation.append(formatMessage(message));
+            }
+        }
+    }
+    
+    private String formatMessage(Message message) {
+        return String.format(
+                    "From: %s -> To: %s | %s\n\t%s\n",
                     message.getFromUser().getUsername(),
                     message.getToUser().getUsername(),
                     message.getTimestamp(),
                     message.getMessage()
-                )
-            );
-        }
-        
-        
+                );
     }
-    
-    
     
 }
